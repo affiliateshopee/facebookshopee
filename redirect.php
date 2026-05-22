@@ -1,10 +1,12 @@
 <?php
+// Matikan buffer output agar pengalihan bisa berjalan instan tanpa jeda script
+ob_start();
+
 $id = $_GET['id'] ?? '';
 
 // Default Fallback jika data kosong
 $destination = 'https://shopee.co.id';
 $title       = 'Lihat Video Selengkapnya';
-$description = 'facebook.com';
 $image       = '';
 
 // Ambil data dari JSON
@@ -14,41 +16,23 @@ if (!empty($id) && file_exists('database.json')) {
         $destination = $dbData[$id]['dest'];
         $title       = $dbData[$id]['title'];
         $image       = $dbData[$id]['img'];
-        // Deskripsi dipaksa menjadi facebook.com sesuai permintaan Anda
-        $description = 'facebook.com';
     }
 }
 
 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
-// Deteksi Bot Facebook Crawler
-$isFacebookBot = (strpos($userAgent, 'facebookexternalhit') !== false || strpos($userAgent, 'Facebot') !== false);
+// Deteksi Akurat Bot Crawler Facebook
+$isFacebookBot = (strpos($userAgent, 'facebookexternalhit') !== false || 
+                  strpos($userAgent, 'Facebot') !== false || 
+                  strpos($userAgent, 'facebookplatform') !== false);
 
-// Jika BUKAN Bot Facebook (Artinya ini Klik Manusia Asli dari FB maupun Browser Lain)
 if (!$isFacebookBot) {
-    // Pengalihan instan menggunakan Meta Refresh murni untuk menghindari popup "Keluar dari Aplikasi"
-    header("Link: <$destination>; rel=\"prefetch\"");
-    ?>
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="referrer" content="no-referrer">
-        <meta http-equiv="refresh" content="0;url=<?php echo $destination; ?>">
-        <script type="text/javascript">
-            // Backup jika Meta Refresh lambat bekerja di device tertentu
-            window.location.href = "<?php echo $destination; ?>";
-        </script>
-    </head>
-    <body>
-        <p>Mengalihkan secara aman...</p>
-    </body>
-    </html>
-    <?php
+    // --- JIKA MANUSIA ASLI (Langsung redirect INSTAN di tingkat server tanpa memuat HTML) ---
+    // Ini taktik paling ampuh agar tidak memicu popup peringatan "Keluar dari Aplikasi"
+    header("Location: " . $destination, true, 301);
     exit;
 } else {
-    // Jika yang mengakses adalah BOT FACEBOOK (Saat status baru ditempel atau di-scand)
-    // Tampilkan Meta Tag dengan Gambar Besar tanpa script pengalihan sama sekali
+    // --- JIKA BOT FACEBOOK (Untuk memancing gambar preview besar & rapi) ---
     ?>
     <!DOCTYPE html>
     <html lang="id">
@@ -58,23 +42,24 @@ if (!$isFacebookBot) {
         
         <meta property="og:type" content="article" />
         <meta property="og:title" content="<?php echo htmlspecialchars($title); ?>" />
-        <meta property="og:description" content="<?php echo htmlspecialchars($description); ?>" />
+        <meta property="og:description" content="facebook.com" />
         <meta property="og:image" content="<?php echo htmlspecialchars($image); ?>" />
         <meta property="og:image:secure_url" content="<?php echo htmlspecialchars($image); ?>" />
+        
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/jpeg" />
         
         <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:title" content="<?php echo htmlspecialchars($title); ?>">
-        <meta name="twitter:description" content="<?php echo htmlspecialchars($description); ?>">
+        <meta name="twitter:description" content="facebook.com">
         <meta name="twitter:image" content="<?php echo htmlspecialchars($image); ?>">
     </head>
     <body>
-        <p>Facebook Crawler Mode.</p>
-    </body>
+        </body>
     </html>
     <?php
     exit;
 }
+ob_end_flush();
 ?>
