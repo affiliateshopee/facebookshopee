@@ -5,7 +5,7 @@ $errorMsg = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $shopeeLink = $_POST['shopeeLink'] ?? '';
     $title       = $_POST['title'] ?? '';
-    $desc        = 'facebook.com'; // Dipaksa otomatis facebook.com
+    $desc        = 'facebook.com'; // Otomatis terkunci ke facebook.com sesuai permintaan Anda
     
     if (!empty($shopeeLink) && !empty($title) && isset($_FILES['imageFile'])) {
         $file = $_FILES['imageFile'];
