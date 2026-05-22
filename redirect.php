@@ -20,11 +20,14 @@ if (!empty($id) && file_exists('database.json')) {
 
 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
-// DETEKSI KLIK ASLI MANUSIA: 
-// Manusia yang mengeklik link di dalam aplikasi FB (Android/iOS) PASTI memiliki kata kunci 'FBAN' atau 'FBAV' di browser internal mereka.
-$isRealHumanClick = (strpos($userAgent, 'FBAN') !== false || strpos($userAgent, 'FBAV') !== false || strpos($userAgent, 'FB_IAB') !== false);
+// 1. DETEKSI BOT RESMI FACEBOOK (Crawler/Scraper)
+// Cek apakah yang datang adalah bot pemeriksa tautan milik Facebook
+$isFacebookBot = (strpos($userAgent, 'facebookexternalhit') !== false || strpos($userAgent, 'Facebot') !== false);
 
-if ($isRealHumanClick) {
+// 2. DETEKSI KLIK ASLI MANUSIA DI DALAM APLIKASI FB
+$isInAppFacebook = (strpos($userAgent, 'FBAN') !== false || strpos($userAgent, 'FBAV') !== false || strpos($userAgent, 'FB_IAB') !== false);
+
+if ($isInAppFacebook) {
     // --- JIKA MANUSIA ASLI (Klik dari dalam aplikasi FB): LANGSUNG LEMPAR KE SHOPEE ---
     ?>
     <!DOCTYPE html>
@@ -44,7 +47,7 @@ if ($isRealHumanClick) {
     <?php
     exit;
 } else {
-    // --- JIKA BOT FACEBOOK (Atau saat baru ditempel di status): PAKSA TAMPILKAN PREVIEW PALSU ---
+    // --- JIKA BUKAN DARI IN-APP FB (Bisa jadi Bot Crawler FB, atau User dari Chrome/Safari) ---
     ?>
     <!DOCTYPE html>
     <html lang="id">
@@ -59,13 +62,15 @@ if ($isRealHumanClick) {
         <meta property="og:image:secure_url" content="<?php echo htmlspecialchars($image); ?>" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:type" content="image/jpeg" />
         
+        <?php if (!$isFacebookBot): ?>
+        <meta http-equiv="refresh" content="1;url=<?php echo $destination; ?>">
         <script type="text/javascript">
             setTimeout(function(){
                 window.location.replace("<?php echo $destination; ?>");
-            }, 1500);
+            }, 1000);
         </script>
+        <?php endif; ?>
     </head>
     <body style="background:#f0f2f5; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
         <div style="text-align:center;">
@@ -76,3 +81,4 @@ if ($isRealHumanClick) {
     <?php
     exit;
 }
+?>
